@@ -1,0 +1,8 @@
+.gradle
+/build/
+/bin/
+/com/
+/runtime/
+/gradle/
+.vscode
+.settings
