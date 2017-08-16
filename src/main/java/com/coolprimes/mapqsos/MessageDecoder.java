@@ -16,7 +16,7 @@ class MessageDecoder{
     int byteCount;
     int nextByte = 0;
     final Logger log = LoggerFactory.getLogger(MessageDecoder.class);
-    
+
     MessageDecoder(byte[] rData, int byteCount){
         this.rData = rData;
         this.byteCount = byteCount;
@@ -65,41 +65,19 @@ class MessageDecoder{
         return getIntInOrder(bb);
     }
 
-    private void parseDecode(){
+    private QDecodeMessage parseDecode(){
         String id = nextString();
-        log.debug("Id: {}", id);
         boolean newDecode = nextBool();
-        log.debug("New: {}", newDecode);
         int time = nextTime();
-        log.debug("Time: {}", formatTime(time));
         int snr = nextInt();
-        log.debug("SNR: {}", snr);
         double deltaTime = nextDouble();
-        int deltaF = nextInt();
-        log.debug("dT: {}, dF {}", 
-            formatDeltaTime(deltaTime), deltaF);
+        int deltaFrequency = nextInt();
         String mode = nextString();
-        log.debug("mode: {}", mode);
         String message = nextString();
-        log.debug("message: {}", message);
         boolean lowConfidence = nextBool();
-        log.debug("lowConfidence: {}", lowConfidence);
-    }
-
-    private String formatDeltaTime(double deltaTime){
-        return String.format("%4.1f", deltaTime);
-    }
-
-    private String formatTime(int msec){
-        int t = msec;
-        int hours = msec/(60 * 60000);
-        t -= 60 * 60000 * hours;
-        int mins = t/(60000);
-        t -= 60000 * mins;
-        int secs = t/1000;
-        t -= 1000 * secs;
-        int msecs = t;
-        return String.format("%02d:%02d:%02d.%03d", hours, mins, secs, msecs); 
+        return new QDecodeMessage(
+            id, newDecode, time, snr, deltaTime, deltaFrequency,
+            mode, message, lowConfidence);
     }
 
     private boolean nextBool(){
@@ -111,15 +89,16 @@ class MessageDecoder{
         return nextInt();
     }
     boolean decode() {
+        QMessage msg;
         byte[] theMagic = {(byte)0xad, (byte)0xbc, (byte)0xcb, (byte)0xda};
         byte[] theWord = nextFour();
-        if(Arrays.equals(theWord, theMagic)){
-            log.debug("Magic start is correct");
-        } else {
+        if(!Arrays.equals(theWord, theMagic)){
             log.debug("Magic start of stream is wrong: {}", theWord);
         }
         schemaVersion = nextInt();
-        log.debug("The schema version is: {}", schemaVersion);
+        if(schemaVersion != 2){
+            log.debug("The schema version is wrong: {}", schemaVersion);
+        }
         messageType = nextInt();
         switch(messageType){
             case 0: 
@@ -130,7 +109,7 @@ class MessageDecoder{
                 break;
             case 2:
                 log.debug("Got Decode");
-                parseDecode();
+                msg = parseDecode();
                 break;
             case 3:
                 log.debug("Got Clear");
