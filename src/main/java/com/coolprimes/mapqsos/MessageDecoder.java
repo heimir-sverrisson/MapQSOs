@@ -9,15 +9,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 
-class QMessage{
+class MessageDecoder{
     private int schemaVersion;
     private int messageType;
     byte [] rData;
     int byteCount;
     int nextByte = 0;
-    final Logger log = LoggerFactory.getLogger(QMessage.class);
+    final Logger log = LoggerFactory.getLogger(MessageDecoder.class);
     
-    QMessage(byte[] rData, int byteCount){
+    MessageDecoder(byte[] rData, int byteCount){
         this.rData = rData;
         this.byteCount = byteCount;
     }
@@ -65,7 +65,7 @@ class QMessage{
         return getIntInOrder(bb);
     }
 
-    private void decode(){
+    private void parseDecode(){
         String id = nextString();
         log.debug("Id: {}", id);
         boolean newDecode = nextBool();
@@ -110,7 +110,7 @@ class QMessage{
     private int nextTime(){
         return nextInt();
     }
-    boolean parse() {
+    boolean decode() {
         byte[] theMagic = {(byte)0xad, (byte)0xbc, (byte)0xcb, (byte)0xda};
         byte[] theWord = nextFour();
         if(Arrays.equals(theWord, theMagic)){
@@ -130,7 +130,7 @@ class QMessage{
                 break;
             case 2:
                 log.debug("Got Decode");
-                decode();
+                parseDecode();
                 break;
             case 3:
                 log.debug("Got Clear");

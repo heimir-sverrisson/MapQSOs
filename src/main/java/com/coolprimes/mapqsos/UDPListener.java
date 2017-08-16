@@ -40,8 +40,8 @@ class UDPListener implements Runnable {
             try{
                 socket.receive(receivePacket);
                 int count = receivePacket.getLength();
-                QMessage qmsg = new QMessage(receiveData, count);
-                qmsg.parse();
+                MessageDecoder dcode = new MessageDecoder(receiveData, count);
+                dcode.decode();
             } catch(IOException ie){
                 log.error("Caught IO Exception: {}", ie.getLocalizedMessage());
             }
