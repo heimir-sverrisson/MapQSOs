@@ -45,8 +45,7 @@ class MessageDecoder{
         }
         int strSize = nextInt();
         if(strSize == 0xffffffff){
-            log.debug("nextString is empty!");
-            return "";
+            return ""; // Return an empty rather than null
         }
         byte [] bytes = new byte[strSize];
         System.arraycopy(rData, nextByte, bytes, 0, strSize);
@@ -65,6 +64,24 @@ class MessageDecoder{
         return getIntInOrder(bb);
     }
 
+    private long nextLong(){
+        byte[] res = new byte[8];
+        for(int i=0; i < 8; i++){
+            res[i] = rData[nextByte++];
+        }
+        ByteBuffer bb = ByteBuffer.wrap(res);
+        return bb.order(ByteOrder.BIG_ENDIAN).getLong();
+    }
+
+    private boolean nextBool(){
+        byte b = rData[nextByte++];
+        return (b == 0) ? false : true;
+    }
+
+    private int nextTime(){
+        return nextInt();
+    }
+
     private QDecodeMessage parseDecode(){
         String id = nextString();
         boolean newDecode = nextBool();
@@ -80,16 +97,39 @@ class MessageDecoder{
             mode, message, lowConfidence);
     }
 
-    private boolean nextBool(){
-        byte b = rData[nextByte++];
-        return (b == 0) ? false : true;
+    private QStatusMessage parseStatus(){
+        String id = nextString();
+        long dialFrequency = nextLong();
+        String mode = nextString();
+        String dxCall = nextString();
+        String report = nextString();
+        String txMode = nextString();
+        boolean txEnabled = nextBool();
+        boolean transmitting = nextBool();
+        boolean decoding = nextBool();
+        int rxDF = nextInt();
+        int txDF = nextInt();
+        String deCall = nextString();
+        String deGrid = nextString();
+        String dxGrid = nextString();
+        boolean txWatchdog = nextBool();
+        String subMode = nextString();
+        boolean fastMode = nextBool();
+        return new QStatusMessage(
+            id, dialFrequency, mode, dxCall, report, txMode, 
+            txEnabled, transmitting, decoding, rxDF, 
+            txDF, deCall, deGrid, dxGrid, txWatchdog, 
+            subMode, fastMode
+        );
     }
 
-    private int nextTime(){
-        return nextInt();
+    private QCloseMessage parseClose(){
+        String id = nextString();
+        return new QCloseMessage(id);
     }
+
     boolean decode() {
-        QMessage msg;
+        QMessage msg = null;
         byte[] theMagic = {(byte)0xad, (byte)0xbc, (byte)0xcb, (byte)0xda};
         byte[] theWord = nextFour();
         if(!Arrays.equals(theWord, theMagic)){
@@ -105,10 +145,9 @@ class MessageDecoder{
                 log.debug("Got Heartbeat");
                 break;
             case 1: 
-                log.debug("Got Status");
+                msg = parseStatus();
                 break;
             case 2:
-                log.debug("Got Decode");
                 msg = parseDecode();
                 break;
             case 3:
@@ -121,7 +160,7 @@ class MessageDecoder{
                 log.debug("Got QSO Logged");
                 break;
             case 6:
-                log.debug("Got Close");
+                msg = parseClose();
                 break;
             case 7:
                 log.debug("Got Relay");
