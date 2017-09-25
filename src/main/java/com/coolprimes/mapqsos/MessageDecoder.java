@@ -128,7 +128,7 @@ class MessageDecoder{
         return new QCloseMessage(id);
     }
 
-    boolean decode() {
+    QMessage decode() {
         QMessage msg = null;
         byte[] theMagic = {(byte)0xad, (byte)0xbc, (byte)0xcb, (byte)0xda};
         byte[] theWord = nextFour();
@@ -176,8 +176,7 @@ class MessageDecoder{
                 break;
             default:
                 log.debug("Unknown messageType: {}", messageType);
-                return false;
         }
-        return true;
+        return msg;
     }
 }
